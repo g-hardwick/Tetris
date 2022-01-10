@@ -1,0 +1,85 @@
+import java.awt.Color;
+import java.awt.Graphics2D;
+
+/*
+ * class that represents each square on the board. Has a square in each 
+ * instance of the Block class, the circle changes to black or white as needed
+ */
+public class Block {
+	// fields for the Square, including its x,y location on the board, width and
+	// height, and color of the circle in it.
+	private int x;
+	private int y;
+	private int i;
+	private int j;
+	private int width;
+	private int height;
+	private Color color;
+	private boolean bottom;
+
+	/*
+	 * Constructor for Square. Sets the fields with given inputs, sets Color to gray
+	 */
+	public Block(int cx, int cy, int width2, int height2, int ci, int cj) {
+		x = cx;
+		y = cy;
+		width = width2;
+		height = height2;
+		color = Color.gray;
+		i = ci;
+		j = cj;
+		bottom = false;
+	}
+
+	/*
+	 * method that draws the squares for the board
+	 */
+	public void draw(Graphics2D g2) {
+		g2.setColor(Color.black);
+		g2.drawRect(x, y, width, height);
+	}
+
+	/*
+	 * setter for the color of the circle in the Square
+	 */
+	public void setColor(Color c) {
+		color = c;
+	}
+
+	/*
+	 * getter for the color of the circle in the Square
+	 */
+	public Color getColor() {
+		return color;
+	}
+
+	/*
+	 * method for drawing the colored squares on the board
+	 */
+	public void block(Graphics2D g2) {
+		g2.setColor(color);
+		g2.fillRect(x, y, width, height);
+	}
+
+	/*
+	 * returns current y value
+	 */
+	public int getJ() {
+		return j;
+	}
+
+	/*
+	 * returns current x value
+	 */
+	public int getI() {
+		return i;
+	}
+
+	public void atBottom(boolean b) {
+		bottom = b;
+	}
+
+	public boolean bottom() {
+		return bottom;
+	}
+}
