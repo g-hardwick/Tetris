@@ -1,0 +1,48 @@
+import java.awt.Dimension;
+import java.awt.GridBagLayout;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
+import javax.swing.Timer;
+
+public class TimeTracker extends JPanel {
+	private Timer timer;
+	private int interval;
+	private int level;
+	private int counter;
+
+	// this is the major method for the class with the constructor, a Timer, and the
+	// actionPreformed thats called in
+	public TimeTracker(GameBoard board) {
+		interval = 10; // 1000 = 1 sec
+		level = 1;
+		counter = 0;
+
+		timer = new Timer(100, new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				counter++;
+				if (counter >= interval) {
+					counter = 0;
+					board.fall();
+				}
+				timerCheck(board);
+				board.repaint();
+
+			}
+		});
+		timer.start();
+	}
+
+	public void timerCheck(GameBoard board) {
+		if (board.getLine() > 5 * level) {
+			level++;
+			interval = interval * 3 / 4;
+		}
+	}
+
+	public void stopGame() {
+		timer.stop();
+	}
+}
