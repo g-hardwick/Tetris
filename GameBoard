@@ -1,0 +1,1001 @@
+import java.awt.Color;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.util.ArrayList;
+import java.util.Random;
+import javax.swing.JComponent;
+import javax.swing.JLabel;
+
+/*
+ * biggest class, creates the board and checks if moves are valid, switches turns, and changes the colors.
+ */
+public class GameBoard extends JComponent {
+
+	// fields for the game board
+	private Block[][] blocks;
+	private int squareSize = 30;
+	private int score;
+	private int lines;
+	private TimeTracker time;
+	boolean inGame;
+	private Graphics2D g2;
+
+	// trackers for the moving piece
+	private ArrayList<Block> movingBlocks;
+	private char shape;
+	private int orientation;
+	private Color currentColor;
+
+	/*
+	 * constructor for the board, also creates the middle 4 circles
+	 */
+	public GameBoard() {
+		time = new TimeTracker(this);
+		score = 0;
+		lines = 0;
+		orientation = 1;
+		blocks = new Block[10][22];
+		movingBlocks = new ArrayList<Block>();
+		shape = ' ';
+		currentColor = Color.gray;
+		inGame = true;
+		init();
+	}
+
+	/*
+	 * starts the game
+	 */
+	public void init() {
+
+		for (int i = 0; i < 10; i++) {
+			for (int j = 0; j < 22; j++) {
+				blocks[i][j] = new Block(i * squareSize + 10, j * squareSize, squareSize, squareSize, i, j);
+			}
+		}
+		newShape();
+	}
+
+	/*
+	 * method that paints the board
+	 */
+	public void paintComponent(Graphics g) {
+		Graphics2D g2 = (Graphics2D) g;
+
+		for (int i = 0; i < 10; i++) {
+			for (int j = 0; j < 22; j++) {
+				blocks[i][j].draw(g2);
+				blocks[i][j].block(g2);
+			}
+		}
+	}
+
+	/*
+	 * moves the piece side to side
+	 */
+	public void moveX(boolean posX) {
+		int overBy = 0;
+		if (posX) {
+			overBy = 1;
+		} else {
+			overBy = -1;
+		}
+		for (int i = 0; i < movingBlocks.size(); i++) {
+			if (movingBlocks.get(i).getI() + overBy > 9 || (movingBlocks.get(i).getI() + overBy) < 0) {
+				return;
+			}
+			if (!blocks[movingBlocks.get(i).getI() + overBy][movingBlocks.get(i).getJ()].getColor().equals(Color.gray)
+					&& !movingBlocks
+							.contains(blocks[movingBlocks.get(i).getI() + overBy][movingBlocks.get(i).getJ()])) {
+				return;
+			}
+		}
+		for (int i = movingBlocks.size() - 1; i >= 0; i--) {
+			blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(Color.gray);
+		}
+		for (int i = movingBlocks.size() - 1; i >= 0; i--) {
+			blocks[movingBlocks.get(i).getI() + overBy][movingBlocks.get(i).getJ()].setColor(currentColor);
+			movingBlocks.set(i, blocks[movingBlocks.get(i).getI() + overBy][movingBlocks.get(i).getJ()]);
+		}
+		getBottoms();
+		repaint();
+	}
+
+	/*
+	 * calls the proper rotate method based on the shape
+	 */
+	public void rotate() {
+		if (shape == 'L') {
+			rotateL();
+		} else if (shape == 'S') {
+			rotateS();
+		} else if (shape == 'J') {
+			rotateJ();
+		} else if (shape == 'Z') {
+			rotateZ();
+		} else if (shape == 'I') {
+			rotateI();
+		} else if (shape == 'O') {
+			return;
+		} else {
+			rotateT();
+		}
+	}
+
+	/*
+	 * rotate for the L shape
+	 */
+	public void rotateL() {
+		int y = 0;
+		int x = 0;
+		for (int i = 0; i < movingBlocks.size(); i++) {
+			if (movingBlocks.get(i).getJ() > y) {
+				y = movingBlocks.get(i).getJ();
+				x = i;
+			}
+		}
+		y--;
+		x = movingBlocks.get(x).getI();
+
+		for (int i = 0; i < movingBlocks.size(); i++) {
+			blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(Color.gray);
+		}
+
+		if (orientation == 1) { // to L
+			if (x + 1 > 9) {
+				x = 8;
+			}
+			if (y - 1 < 0) {
+				y = 1;
+			}
+			if (!blocks[x][y].getColor().equals(Color.gray) || !blocks[x][y - 1].getColor().equals(Color.gray)
+					|| !blocks[x][y + 1].getColor().equals(Color.gray)
+					|| !blocks[x + 1][y + 1].getColor().equals(Color.gray)) {
+				for (int i = 0; i < movingBlocks.size(); i++) {
+					blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(currentColor);
+				}
+				return;
+			}
+			movingBlocks.clear();
+			movingBlocks.add(blocks[x][y]);
+			movingBlocks.add(blocks[x][y - 1]);
+			movingBlocks.add(blocks[x][y + 1]);
+			movingBlocks.add(blocks[x + 1][y + 1]);
+			orientation++;
+		} else if (orientation == 2) {// to |--
+			if (x + 1 > 9) {
+				x = 8;
+			} else if (x - 1 < 0) {
+				x = 1;
+			}
+			if (!blocks[x][y].getColor().equals(Color.gray) || !blocks[x - 1][y].getColor().equals(Color.gray)
+					|| !blocks[x + 1][y].getColor().equals(Color.gray)
+					|| !blocks[x - 1][y + 1].getColor().equals(Color.gray)) {
+				for (int i = 0; i < movingBlocks.size(); i++) {
+					blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(currentColor);
+				}
+				return;
+			}
+			movingBlocks.clear();
+			movingBlocks.add(blocks[x][y]);
+			movingBlocks.add(blocks[x - 1][y]);
+			movingBlocks.add(blocks[x + 1][y]);
+			movingBlocks.add(blocks[x - 1][y + 1]);
+			orientation++;
+		} else if (orientation == 3) { // to -|
+			if (x - 1 < 0) {
+				x = 1;
+			}
+			if (y - 1 < 0) {
+				y = 1;
+			}
+			if (!blocks[x][y].getColor().equals(Color.gray) || !blocks[x][y - 1].getColor().equals(Color.gray)
+					|| !blocks[x - 1][y - 1].getColor().equals(Color.gray)
+					|| !blocks[x][y + 1].getColor().equals(Color.gray)) {
+				for (int i = 0; i < movingBlocks.size(); i++) {
+					blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(currentColor);
+				}
+				return;
+			}
+			movingBlocks.clear();
+			movingBlocks.add(blocks[x][y]);
+			movingBlocks.add(blocks[x][y - 1]);
+			movingBlocks.add(blocks[x - 1][y - 1]);
+			movingBlocks.add(blocks[x][y + 1]);
+			orientation++;
+		} else { // to __|
+			if (x + 1 > 9) {
+				x = 8;
+			} else if (x - 1 < 0) {
+				x = 1;
+			}
+			if (y - 1 < 0) {
+				y = 1;
+			}
+			if (!blocks[x][y].getColor().equals(Color.gray) || !blocks[x - 1][y].getColor().equals(Color.gray)
+					|| !blocks[x + 1][y].getColor().equals(Color.gray)
+					|| !blocks[x + 1][y - 1].getColor().equals(Color.gray)) {
+				for (int i = 0; i < movingBlocks.size(); i++) {
+					blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(currentColor);
+				}
+				return;
+			}
+			movingBlocks.clear();
+			movingBlocks.add(blocks[x][y]);
+			movingBlocks.add(blocks[x - 1][y]);
+			movingBlocks.add(blocks[x + 1][y]);
+			movingBlocks.add(blocks[x + 1][y - 1]);
+			orientation = 1;
+		}
+
+		for (int i = 0; i < movingBlocks.size(); i++) {
+			blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(currentColor);
+		}
+		getBottoms();
+	}
+
+	/*
+	 * rotate for the S shape
+	 */
+	public void rotateS() {
+		int y = 0;
+		int x = 0;
+
+		if (orientation == 1) { // to |-|
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				if (movingBlocks.get(i).getJ() > y) {
+					y = movingBlocks.get(i).getJ();
+				}
+				if (movingBlocks.get(i).getI() > x) {
+					x = movingBlocks.get(i).getI();
+				}
+				try {
+					if (movingBlocks.contains(blocks[movingBlocks.get(i).getI() + 1][movingBlocks.get(i).getJ()])
+							&& movingBlocks
+									.contains(blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ() + 1])) {
+						y = movingBlocks.get(i).getJ();
+						x = movingBlocks.get(i).getI();
+					}
+				} catch (IndexOutOfBoundsException e) {
+				}
+			}
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(Color.gray);
+			}
+			if (x - 1 < 0) {
+				x = 1;
+			}
+			if (y - 1 < 0) {
+				y = 1;
+			}
+			if (!blocks[x][y].getColor().equals(Color.gray) || !blocks[x][y + 1].getColor().equals(Color.gray)
+					|| !blocks[x - 1][y].getColor().equals(Color.gray)
+					|| !blocks[x - 1][y - 1].getColor().equals(Color.gray)) {
+				for (int i = 0; i < movingBlocks.size(); i++) {
+					blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(currentColor);
+				}
+				return;
+			}
+			movingBlocks.clear();
+			movingBlocks.add(blocks[x][y]);
+			movingBlocks.add(blocks[x][y + 1]);
+			movingBlocks.add(blocks[x - 1][y]);
+			movingBlocks.add(blocks[x - 1][y - 1]);
+			orientation++;
+		} else { // to __|-
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				try {
+					if (movingBlocks.contains(blocks[movingBlocks.get(i).getI() + 1][movingBlocks.get(i).getJ()])
+							&& movingBlocks
+									.contains(blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ() - 1])) {
+						y = movingBlocks.get(i).getJ();
+						x = movingBlocks.get(i).getI();
+					}
+				} catch (IndexOutOfBoundsException e) {
+
+				}
+			}
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(Color.gray);
+			}
+			movingBlocks.clear();
+			if (x + 1 > 9) {
+				x = 8;
+			} else if (x - 1 < 0) {
+				x = 1;
+			}
+			if (y - 1 < 0) {
+				y = 1;
+			}
+			movingBlocks.add(blocks[x][y]);
+			movingBlocks.add(blocks[x - 1][y]);
+			movingBlocks.add(blocks[x][y - 1]);
+			movingBlocks.add(blocks[x + 1][y - 1]);
+			orientation = 1;
+		}
+
+		for (int i = 0; i < movingBlocks.size(); i++) {
+			blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(currentColor);
+		}
+		getBottoms();
+	}
+
+	/*
+	 * rotate for the J shape
+	 */
+	public void rotateJ() {
+		int y = 0;
+		int x = 0;
+		for (int i = 0; i < movingBlocks.size(); i++) {
+			if (movingBlocks.get(i).getJ() > y) {
+				y = movingBlocks.get(i).getJ();
+				x = i;
+			}
+		}
+		y--;
+		x = movingBlocks.get(x).getI();
+		for (int i = 0; i < movingBlocks.size(); i++) {
+			blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(Color.gray);
+		}
+		movingBlocks.clear();
+		if (orientation == 1) { // to L
+			if (x + 1 > 9) {
+				x = 8;
+			}
+			if (y - 1 < 0) {
+				y = 1;
+			}
+			movingBlocks.add(blocks[x][y]);
+			movingBlocks.add(blocks[x][y - 1]);
+			movingBlocks.add(blocks[x][y + 1]);
+			movingBlocks.add(blocks[x + 1][y - 1]);
+			orientation++;
+		} else if (orientation == 2) {// to |--
+			if (x + 1 > 9) {
+				x = 8;
+			} else if (x - 1 < 0) {
+				x = 1;
+			}
+			if (y - 1 < 0) {
+				y = 1;
+			}
+			movingBlocks.add(blocks[x][y]);
+			movingBlocks.add(blocks[x - 1][y]);
+			movingBlocks.add(blocks[x + 1][y]);
+			movingBlocks.add(blocks[x + 1][y + 1]);
+			orientation++;
+		} else if (orientation == 3) { // to -|
+			if (x - 0 < 0) {
+				x = 1;
+			}
+			if (y - 1 < 0) {
+				y = 1;
+			}
+			movingBlocks.add(blocks[x][y]);
+			movingBlocks.add(blocks[x][y - 1]);
+			movingBlocks.add(blocks[x][y + 1]);
+			movingBlocks.add(blocks[x - 1][y + 1]);
+			orientation++;
+		} else { // to __|
+			if (x + 1 > 9) {
+				x = 8;
+			} else if (x - 1 < 0) {
+				x = 1;
+			}
+			if (y - 1 < 0) {
+				y = 1;
+			}
+			movingBlocks.add(blocks[x][y]);
+			movingBlocks.add(blocks[x - 1][y]);
+			movingBlocks.add(blocks[x + 1][y]);
+			movingBlocks.add(blocks[x - 1][y - 1]);
+			orientation = 1;
+		}
+
+		for (int i = 0; i < movingBlocks.size(); i++) {
+			blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(currentColor);
+		}
+		getBottoms();
+	}
+
+	/*
+	 * rotate for the Z shape
+	 */
+	public void rotateZ() {
+		int y = 0;
+		int x = 0;
+		if (orientation == 1) { // to |-|
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				if (movingBlocks.get(i).getJ() > y) {
+					y = movingBlocks.get(i).getJ();
+				}
+				if (movingBlocks.get(i).getI() > x) {
+					x = movingBlocks.get(i).getI();
+				}
+				try {
+					if (movingBlocks.contains(blocks[movingBlocks.get(i).getI() + 1][movingBlocks.get(i).getJ()])
+							&& movingBlocks
+									.contains(blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ() + 1])) {
+						y = movingBlocks.get(i).getJ();
+						x = movingBlocks.get(i).getI();
+					}
+				} catch (IndexOutOfBoundsException e) {
+				}
+			}
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(Color.gray);
+			}
+			if (y - 1 < 0) {
+				y = 1;
+
+			}
+			if (x - 1 < 0) {
+				x = 1;
+			}
+			movingBlocks.clear();
+			movingBlocks.add(blocks[x][y]);
+			movingBlocks.add(blocks[x][y - 1]);
+			movingBlocks.add(blocks[x - 1][y]);
+			movingBlocks.add(blocks[x - 1][y + 1]);
+			orientation++;
+		} else { // to Z
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				if (movingBlocks.get(i).getJ() > y) {
+					y = movingBlocks.get(i).getJ() - 1;
+				}
+				if (movingBlocks.get(i).getI() > x) {
+					x = movingBlocks.get(i).getI();
+				}
+				try {
+					if (movingBlocks.contains(blocks[movingBlocks.get(i).getI() + 1][movingBlocks.get(i).getJ()])
+							&& movingBlocks
+									.contains(blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ() + 1])) {
+						y = movingBlocks.get(i).getJ();
+						x = movingBlocks.get(i).getI();
+					}
+				} catch (IndexOutOfBoundsException e) {
+				}
+			}
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(Color.gray);
+
+			}
+			if (y + 1 > 22) {
+				y = 21;
+			}
+			if (x - 1 < 0) {
+				x = 1;
+			} else if (x + 1 > 9) {
+				x = 8;
+			}
+			movingBlocks.clear();
+			movingBlocks.add(blocks[x][y]);
+			movingBlocks.add(blocks[x - 1][y]);
+			movingBlocks.add(blocks[x][y + 1]);
+			movingBlocks.add(blocks[x + 1][y + 1]);
+			orientation--;
+		}
+
+		for (int i = 0; i < movingBlocks.size(); i++) {
+			blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(currentColor);
+		}
+		getBottoms();
+	}
+
+	/*
+	 * rotate for the I shape
+	 */
+	public void rotateI() {
+		int x = 0;
+		int y = 0;
+
+		if (orientation == 1) {
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				if (movingBlocks.get(i).getI() > x) {
+					x = movingBlocks.get(i).getI();
+					y = movingBlocks.get(i).getJ();
+				}
+			}
+			x--;
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(Color.gray);
+			}
+			if (y - 1 < 0) {
+				y = 1;
+			}
+			movingBlocks.clear();
+			movingBlocks.add(blocks[x][y]);
+			movingBlocks.add(blocks[x][y - 1]);
+			movingBlocks.add(blocks[x][y + 1]);
+			movingBlocks.add(blocks[x][y + 2]);
+			orientation++;
+		} else {
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				if (movingBlocks.get(i).getJ() > y) {
+					x = movingBlocks.get(i).getI();
+					y = movingBlocks.get(i).getJ();
+				}
+			}
+			y--;
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(Color.gray);
+			}
+			if (x - 1 < 0) {
+				x++;
+			} else if (x + 2 > 9) {
+				x = 7;
+			}
+			movingBlocks.clear();
+			movingBlocks.add(blocks[x - 1][y]);
+			movingBlocks.add(blocks[x][y]);
+			movingBlocks.add(blocks[x + 1][y]);
+			movingBlocks.add(blocks[x + 2][y]);
+			orientation--;
+		}
+
+		for (int i = 0; i < movingBlocks.size(); i++) {
+			blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(currentColor);
+		}
+		getBottoms();
+	}
+
+	/*
+	 * rotate for the T shape
+	 */
+	public void rotateT() {
+		int x = 0;
+		int y = 0;
+		if (orientation == 1) {
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				try {
+					if (movingBlocks.contains(blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ() - 1])) {
+						y = movingBlocks.get(i).getJ();
+						x = movingBlocks.get(i).getI();
+					}
+				} catch (IndexOutOfBoundsException e) {
+
+				}
+			}
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(Color.gray);
+			}
+			if (x + 1 > 9) {
+				x = 8;
+			}
+			if (y - 1 < 0) {
+				y = 1;
+			}
+			movingBlocks.clear();
+			movingBlocks.add(blocks[x + 1][y]);
+			movingBlocks.add(blocks[x][y]);
+			movingBlocks.add(blocks[x][y - 1]);
+			movingBlocks.add(blocks[x][y + 1]);
+			orientation++;
+		} else if (orientation == 2) {
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				try {
+					if (movingBlocks.contains(blocks[movingBlocks.get(i).getI() + 1][movingBlocks.get(i).getJ()])) {
+						y = movingBlocks.get(i).getJ();
+						x = movingBlocks.get(i).getI();
+					}
+				} catch (IndexOutOfBoundsException e) {
+
+				}
+			}
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(Color.gray);
+			}
+			if (x + 1 > 9) {
+				x = 8;
+			} else if (x - 1 < 0) {
+				x = 1;
+			}
+			movingBlocks.clear();
+			movingBlocks.add(blocks[x + 1][y]);
+			movingBlocks.add(blocks[x - 1][y]);
+			movingBlocks.add(blocks[x][y]);
+			movingBlocks.add(blocks[x][y + 1]);
+			orientation++;
+		} else if (orientation == 3) {
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				try {
+					if (movingBlocks.contains(blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ() + 1])) {
+						y = movingBlocks.get(i).getJ();
+						x = movingBlocks.get(i).getI();
+					}
+				} catch (IndexOutOfBoundsException e) {
+
+				}
+			}
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(Color.gray);
+			}
+			if (y - 1 < 0) {
+				y = 1;
+			}
+			movingBlocks.clear();
+			movingBlocks.add(blocks[x - 1][y]);
+			movingBlocks.add(blocks[x][y]);
+			movingBlocks.add(blocks[x][y - 1]);
+			movingBlocks.add(blocks[x][y + 1]);
+			orientation++;
+		} else {
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				try {
+					if (movingBlocks.contains(blocks[movingBlocks.get(i).getI() + 1][movingBlocks.get(i).getJ()])) {
+						y = movingBlocks.get(i).getJ();
+						x = movingBlocks.get(i).getI() - 1;
+					}
+				} catch (IndexOutOfBoundsException e) {
+
+				}
+			}
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(Color.gray);
+			}
+			if (x + 1 > 9) {
+				x = 8;
+			} else if (x - 1 < 0) {
+				x = 1;
+			}
+			if (y - 1 < 0) {
+				y = 1;
+			}
+			movingBlocks.clear();
+			movingBlocks.add(blocks[x + 1][y]);
+			movingBlocks.add(blocks[x - 1][y]);
+			movingBlocks.add(blocks[x][y]);
+			movingBlocks.add(blocks[x][y - 1]);
+			orientation = 1;
+		}
+
+		for (int i = 0; i < movingBlocks.size(); i++) {
+			blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(currentColor);
+		}
+		getBottoms();
+	}
+
+	/*
+	 * sets which pieces are at the bottom (to check if a piece should stop moving)
+	 */
+	public void getBottoms() {
+
+		ArrayList<Block> col1 = new ArrayList<Block>();
+		ArrayList<Block> col2 = new ArrayList<Block>();
+		ArrayList<Block> col3 = new ArrayList<Block>();
+		ArrayList<Block> col4 = new ArrayList<Block>();
+
+		int smallestX = 10;
+		for (int i = 0; i < movingBlocks.size(); i++) {
+			movingBlocks.get(i).atBottom(false);
+			if (movingBlocks.get(i).getI() < smallestX) {
+				smallestX = movingBlocks.get(i).getI();
+			}
+		}
+		for (int i = 0; i < movingBlocks.size(); i++) {
+			if (movingBlocks.get(i).getI() == smallestX) {
+				col1.add(movingBlocks.get(i));
+			} else if (movingBlocks.get(i).getI() == smallestX + 1) {
+				col2.add(movingBlocks.get(i));
+			} else if (movingBlocks.get(i).getI() == smallestX + 2) {
+				col3.add(movingBlocks.get(i));
+			} else if (movingBlocks.get(i).getI() == smallestX + 3) {
+				col4.add(movingBlocks.get(i));
+			}
+		}
+		int biggestY = 0;
+		try {
+			for (int i = 0; i < col1.size(); i++) {
+				if (col1.get(i).getJ() > col1.get(biggestY).getJ()) {
+					biggestY = i;
+				}
+			}
+			col1.get(biggestY).atBottom(true);
+		} catch (IndexOutOfBoundsException e) {
+		}
+		biggestY = 0;
+		try {
+			for (int i = 0; i < col2.size(); i++) {
+				if (col2.get(i).getJ() > col2.get(biggestY).getJ()) {
+					biggestY = i;
+				}
+			}
+			col2.get(biggestY).atBottom(true);
+		} catch (IndexOutOfBoundsException e) {
+		}
+		biggestY = 0;
+		try {
+			for (int i = 0; i < col3.size(); i++) {
+				if (col3.get(i).getJ() > col3.get(biggestY).getJ()) {
+					biggestY = i;
+				}
+			}
+			col3.get(biggestY).atBottom(true);
+		} catch (IndexOutOfBoundsException e) {
+		}
+
+		biggestY = 0;
+		try {
+			for (int i = 0; i < col4.size(); i++) {
+				if (col4.get(i).getJ() > col4.get(biggestY).getJ()) {
+					biggestY = i;
+				}
+			}
+			col4.get(biggestY).atBottom(true);
+		} catch (IndexOutOfBoundsException e) {
+		}
+	}
+
+	/*
+	 * adds to the score when a new line is completed or the user speeds up the game
+	 */
+	public void addScore(int i) {
+		if (inGame) {
+			score += i;
+		}
+	}
+
+	/*
+	 * checks if there is a completely filled line
+	 */
+	public void line() {
+		ArrayList<Integer> lines = new ArrayList<Integer>();
+		boolean same = true;
+		for (int j = 0; j < 22; j++) {
+			for (int i = 0; i < 10; i++) {
+				if (blocks[i][j].getColor().equals(Color.gray)) {
+					same = false;
+				}
+			}
+			if (same) {
+				lines.add(j);
+			}
+			same = true;
+		}
+		if (lines.isEmpty()) {
+			return;
+		}
+		int counter = 0;
+		for (int index = 0; index < lines.size(); index++) {
+			for (int i = 0; i < 10; i++) {
+				blocks[i][lines.get(index)].setColor(Color.gray);
+			}
+			counter++;
+			this.lines++;
+			fallLine(lines.get(index));
+		}
+		if (counter == 1) {
+			addScore(100);
+		} else if (counter == 2) {
+			addScore(300);
+		} else if (counter == 3) {
+			addScore(600);
+		} else {
+			addScore(1000);
+		}
+	}
+
+	/*
+	 * given the line that is filled, makes all the lines above it drop
+	 */
+	public void fallLine(int line) {
+		for (int j = line - 1; j > 0; j--) {
+			for (int i = 0; i < 10; i++) {
+				blocks[i][j + 1].setColor(blocks[i][j].getColor());
+			}
+		}
+		for (int i = 0; i < 10; i++) {
+			blocks[i][0].setColor(Color.gray);
+		}
+	}
+
+	/*
+	 * picks the next shape to be dropped
+	 */
+	public void newShape() {
+		if (inGame) {
+			Random rand = new Random();
+			int shape = rand.nextInt(7);
+			if (shape == 0) {
+				L(rand.nextInt(7));
+			} else if (shape == 1) {
+				S(rand.nextInt(7));
+			} else if (shape == 2) {
+				J(rand.nextInt(7));
+			} else if (shape == 3) {
+				Z(rand.nextInt(7));
+			} else if (shape == 4) {
+				I(rand.nextInt(6));
+			} else if (shape == 5) {
+				O(rand.nextInt(8));
+			} else {
+				t(rand.nextInt(7));
+			}
+			getBottoms();
+		}
+	}
+
+	/*
+	 * orange L shape
+	 */
+	public void L(int x) {
+		shape = 'L';
+		currentColor = Color.orange;
+
+		movingBlocks.add(blocks[x][1]);
+		movingBlocks.add(blocks[x + 1][1]);
+		movingBlocks.add(blocks[x + 2][1]);
+		movingBlocks.add(blocks[x + 2][0]);
+	}
+
+	/*
+	 * green zig shape
+	 */
+	public void S(int x) {
+		shape = 'S';
+		currentColor = Color.green;
+
+		movingBlocks.add(blocks[x][1]);
+		movingBlocks.add(blocks[x + 1][1]);
+		movingBlocks.add(blocks[x + 1][0]);
+		movingBlocks.add(blocks[x + 2][0]);
+	}
+
+	/*
+	 * orange backwards L shape
+	 */
+	public void J(int x) {
+		shape = 'J';
+		currentColor = Color.blue;
+
+		movingBlocks.add(blocks[x][1]);
+		movingBlocks.add(blocks[x + 1][1]);
+		movingBlocks.add(blocks[x + 2][1]);
+		movingBlocks.add(blocks[x][0]);
+
+	}
+
+	/*
+	 * red backwards zig shape
+	 */
+	public void Z(int x) {
+		shape = 'Z';
+		currentColor = Color.red;
+
+		movingBlocks.add(blocks[x][0]);
+		movingBlocks.add(blocks[x + 1][0]);
+		movingBlocks.add(blocks[x + 1][1]);
+		movingBlocks.add(blocks[x + 2][1]);
+	}
+
+	/*
+	 * light blue line shape
+	 */
+	public void I(int x) {
+		shape = 'I';
+		currentColor = Color.cyan;
+
+		movingBlocks.add(blocks[x][0]);
+		movingBlocks.add(blocks[x + 1][0]);
+		movingBlocks.add(blocks[x + 2][0]);
+		movingBlocks.add(blocks[x + 3][0]);
+	}
+
+	/*
+	 * yellow square shape
+	 */
+	public void O(int x) {
+		shape = 'O';
+		currentColor = Color.yellow;
+
+		movingBlocks.add(blocks[x][1]);
+		movingBlocks.add(blocks[x][0]);
+		movingBlocks.add(blocks[x + 1][0]);
+		movingBlocks.add(blocks[x + 1][1]);
+	}
+
+	/*
+	 * orange T shape
+	 */
+	public void t(int x) {
+		shape = 't';
+		currentColor = Color.magenta;
+
+		movingBlocks.add(blocks[x][1]);
+		movingBlocks.add(blocks[x + 1][1]);
+		movingBlocks.add(blocks[x + 1][0]);
+		movingBlocks.add(blocks[x + 2][1]);
+	}
+
+	/*
+	 * sets all the currently moving blocks to their appropriate color
+	 */
+	public void colorBlocks() {
+		for (int i = 0; i < movingBlocks.size(); i++) {
+			movingBlocks.get(i).setColor(currentColor);
+		}
+	}
+
+	/*
+	 * checks if the moving shape is at the bottom (of the board, or if collided
+	 * with another piece
+	 */
+	public boolean atBottom() {
+		for (int i = 0; i < movingBlocks.size(); i++) {
+			if (movingBlocks.get(i).getJ() > 20) {
+				return true;
+			}
+			if (movingBlocks.get(i).bottom()) {
+				if (!(blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ() + 1].getColor()
+						.equals(Color.gray))) {
+					return true;
+				}
+			}
+		}
+		return false;
+	}
+
+	/*
+	 * checks if at the bottom, if not than moves the piece down one, if is then
+	 * gets a new piece and sees if the game is over
+	 */
+	public void fall() {
+		if (!atBottom()) {
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ()].setColor(Color.gray);
+			}
+			for (int i = 0; i < movingBlocks.size(); i++) {
+				blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ() + 1].setColor(currentColor);
+				movingBlocks.set(i, blocks[movingBlocks.get(i).getI()][movingBlocks.get(i).getJ() + 1]);
+			}
+			getBottoms();
+		} else {
+			line();
+			gameOver();
+			movingBlocks.clear();
+			newShape();
+		}
+		repaint();
+	}
+
+	/*
+	 * method that updates the score at the top of the game
+	 */
+	public void updateScore(JLabel scorer) {
+		scorer.setText("Score:  " + score + "         Lines:  " + lines);
+		if (!inGame) {
+			scorer.setText("GAME OVER.  Score:  " + score + "         Lines:  " + lines);
+		}
+	}
+
+	/*
+	 * updates the score for the start of the game
+	 */
+	public void updateScore(JLabel scorer, String welcome) {
+		scorer.setText(welcome);
+	}
+
+	/*
+	 * returns the number of cleared lines (used for timer)
+	 */
+	public int getLine() {
+		return lines;
+	}
+
+	/*
+	 * checks if there are pieces in the top row
+	 */
+	public void gameOver() {
+		for (int i = 0; i < 10; i++) {
+			if (!blocks[i][1].getColor().equals(Color.gray)) {
+				inGame = false;
+			}
+		}
+	}
+
+	/*
+	 * returns the score
+	 */
+	public int getScore() {
+		return score;
+	}
+}
